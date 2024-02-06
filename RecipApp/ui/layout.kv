@@ -1,0 +1,883 @@
+#:import Clock kivy.clock.Clock
+# #:import keyboard kivy.core.window.keyboard
+
+#:set icons_path 'RecipApp/ui/icons/'
+#:set images_path 'RecipApp/ui/images/'
+
+#:set base_font_size sp(20)
+#:set small_font_size 0.8*base_font_size
+#:set big_font_size 1.2*base_font_size
+
+#:set primary_color 0.2,.75,.25,.8
+#:set auxiliary_color 0.3,.75,.25,.6
+#:set text_color 0,0,0,.8
+
+#:set button_size '55sp'
+
+#:set row_height '35sp'
+#:set big_row_height '50sp'
+
+#:set main_padding ['10sp', '10sp']
+#:set small_padding ['5sp', '5sp']
+
+#:set grid_spacing '10sp'
+
+#################
+# LABELS
+#################
+<BaseLabel>:
+	color: text_color
+	font_size: base_font_size
+
+<SmallLabel>: #inherits from BaseLabel
+	font_size: small_font_size
+
+<LeftLabel>: # left aligned label. Inherits from BaseLabel
+	font_size: base_font_size
+    size_hint: 1, None
+    text_size: self.size
+    height: self.texture_size[1]
+    halign: 'left'
+
+<SmallLeftLabel>: # inherits from LeftLabel
+	font_size: small_font_size
+
+<WrappedLabel>:
+	size_hint: 1, None
+	text_size: 0.7*self.width, None
+	height: self.texture_size[1]
+	halign: 'center'
+
+###################
+# BUTTONS, TEXT INPUTS
+###################
+<BaseTextInput>:
+	size_hint: None, None
+	height: row_height
+	padding: ['10sp', self.height / 2.0 - (self.line_height / 2.0) * len(self._lines)]
+	background_normal: ''
+	background_active: ''
+	write_tab: False
+
+<CutCopyPaste>:
+	size_hint: None, None
+	size: ('180sp', row_height)
+	pos_hint: {'center_x': .5, 'y': .6}
+	BubbleButton:
+		text: 'Cut'
+	BubbleButton:
+		text: 'Copy'
+	BubbleButton:
+		text: 'Paste'
+
+<DropListButton>: # Button for DropDown widgets.
+	color: text_color
+	background_normal: ''
+	text_size: self.width, None
+	padding_x: 10
+
+<MainButton>:
+	background_normal: ''
+	background_color: primary_color
+	#background_down: ''
+	font_size: '20sp'
+	text_size: self.width, None
+	halign: 'center'
+
+<DelIngButton>:
+	text: '-'
+	size_hint: None, None
+	height: row_height
+	width: row_height
+	on_release: self.parent.parent.remove_widget(self.parent)
+
+<IngredientRow>:
+	ing: ing
+	ingText: ing.text
+	orientation: 'horizontal'
+	size_hint: 1, None
+	height: row_height
+	spacing: '5sp'
+	BaseTextInput:
+		id: ing
+		hint_text: 'Ingredient'
+		multiline: False
+		size_hint: .5, None
+		height: row_height
+		on_text:
+			root.update_ingredients(self)
+		on_focus:
+			root.handle_focus(self, True)
+	BaseTextInput:
+		id: quant
+		hint_text: 'Quantity'
+		multiline: False
+		size_hint: .3, None
+		height: row_height
+	BaseTextInput:
+		id: measure
+		hint_text: 'Measure'
+		size_hint: .2, None
+		height: row_height
+		multiline: False
+		on_focus:
+			root.handle_focus(self)  # focus event is now handled in the IngredientRow class
+	MainButton:
+		id: addIng
+		text: "+"
+		size_hint: None, None
+		height: row_height
+		width: row_height
+		on_release: app.root.ids.add.addIngredient(self)
+
+<TagButton>:
+	size_hint: None, None
+	text_size: None, None
+	width: self.texture_size[0]
+	height: row_height
+	halign: 'center'
+	padding_x: 10
+	on_release: self.parent.remove_widget(self)
+
+<TagLabel>:
+	size_hint: None, None
+	text_size: None, None
+	background_active: ''
+	width: self.texture_size[0]
+	height: row_height
+	halign: 'center'
+	padding_x: 10	
+
+
+<TagsGrid>:
+	id: tagsGrid
+	tagButtonsBox: tagButtonsBox
+	tagInput: tagInput
+
+	cols: 2
+	size_hint: 1, None
+	#width: self.parent.size[0] - 2*self.parent.padding[0]
+	height: self.minimum_height
+	padding: main_padding
+	StackLayout:
+		id: tagsInputBox
+		orientation: 'lr-tb'
+		size_hint: None, None
+		width: self.parent.size[0]/2 - self.parent.padding[0]
+		height: tagButtonsBox.height
+		pos_hint: {"x": 0, "top": 1}
+		SmallLeftLabel:
+			text: 'Tags:'
+			size_hint: .3, None
+			height: row_height
+			valign: 'middle'
+			pos_hint: {"top": 1}
+		BaseTextInput:
+			id: tagInput
+			hint_text: 'Choose a tag'
+			size_hint: .55, None
+			height: row_height
+			on_focus: root.handle_focus(self)
+			pos_hint: {"top": 1}
+			multiline: False
+		MainButton:
+			id: addTagButton
+			text: '->'
+			size_hint: .15, None
+			height: row_height
+			pos_hint: {"top": 1}
+			on_release:
+				root.addTag()
+				tagInput.text = ''
+	StackLayout:
+		id: tagButtonsBox
+		size_hint: None, None
+		width: self.parent.size[0]/2 - self.parent.padding[0]
+		minimum_height: row_height
+		height: self.minimum_height
+		pos_hint: {"top": 1}
+		padding: ['5sp', 0]
+		spacing: ['5sp', 0]
+
+<BrowseListRow>:
+	orientation: 'horizontal'
+	size_hint: 1, None
+	height: row_height
+	spacing: '5sp'
+	ListButton:
+		id: listButton
+	AddToBasketButton:
+		id: addToBasketButton
+		background_normal: icons_path+'basket.png'
+		border: 0,0,0,0
+		canvas.before:
+			Color:
+				rgba: primary_color
+			Rectangle:
+				pos: self.pos
+				size: self.size
+
+<ListButton>: # Button for browse Window list of recipes
+	font_size: small_font_size
+	background_normal: ''
+	color: text_color
+	haling: 'left'
+	size_hint: .9, None
+	height: row_height
+
+<AddToBasketButton>:
+	size_hint: None, None
+	width: row_height
+	height: row_height
+	on_release: app.root.openPortionsPopup(self)
+
+<RecipeRow>:
+	orientation: 'horizontal'
+	size_hint: 1, None
+	height: row_height
+	spacing: '5sp'
+	SmallLabel:
+		id: recipeName
+		size_hint: .9, None
+		text_size: self.width, None
+		height: row_height
+		halign: 'left'
+	BaseTextInput:
+		id: portionsInput
+		size_hint: .1, None
+
+
+###########
+# OTHERS
+###########
+
+<Spacing>:
+	size_hint: 1, None
+	height: '10sp'
+
+<TopBar>: # Screen's Top Bar (for all screens except main window)
+	orientation: 'horizontal'
+	size_hint: 1, None
+	height: button_size
+	pos_hint: {"x": 0, "top": 1}
+	canvas:
+		Color:
+			rgba: primary_color
+		Rectangle:
+			pos: self.pos
+			size: self.size
+
+<TopButton@Button>:  # buttons for the TopBar
+	size_hint: None, None
+	height: button_size
+	width: button_size
+
+<TopLabel@Label>:
+	size_hint: None, 1
+	text_size: None, None
+	background_active: ''
+	width: self.texture_size[0]
+	font_size: base_font_size
+	
+
+<MainScrollView@ScrollView>:
+	size_hint: 1, None
+	bar_color: primary_color
+	bar_margin: '5sp'
+	scroll_type: ['bars', 'content']
+
+<MainStackLayout@StackLayout>:
+	orientation: 'lr-tb'
+	size_hint: 1, None
+	height: self.minimum_height
+
+<WhiteStackLayout@MainStackLayout>:
+	padding: small_padding
+	canvas:
+		Color:
+			rgba: 1,1,1,1
+		RoundedRectangle:
+			pos: self.pos
+			size: self.size
+			radius: [(10,10),(10,10),(10,10),(10,10)]
+
+<BasePopup>:
+	box: box
+	message: message
+
+	size_hint: .8, .3
+	auto_dismiss: True
+	StackLayout:
+		id: box
+		orientation: 'lr-tb'
+		size_hint: 1, 1
+		padding: main_padding
+		Label:
+			id: message
+			text: ""
+			text_size: self.width, None
+			size_hint: 1, None
+			height: self.texture_size[1]
+			pos_hint: {"x": .05, "top": .9}
+
+<ConfirmPopup>:
+	box: box
+	message: message
+	noButton: noButton
+	yesButton: yesButton
+
+	size_hint: .8, None
+	height: box.height + sp(100)
+	padding: main_padding
+	auto_dismiss: False
+	StackLayout:
+		id: box
+		orientation: 'lr-tb'
+		size_hint: 1, None
+		height: self.minimum_height
+		pos_hint: {"top": .9}
+		padding: main_padding
+		Label:
+			id: message
+			text: ""
+			text_size: self.width, None
+			size_hint: None, None
+			width: self.parent.width
+			height: self.texture_size[1]
+		Spacing:
+		Label:
+			size_hint: .15, None
+		Button:
+			id: noButton
+			size_hint: .3, None
+			height: row_height
+		Label:
+			size_hint: .1, None
+		Button:
+			id: yesButton
+			size_hint: .3, None
+			height: row_height
+		Label:
+			size_hint: .15, None
+
+
+<InputPopup>:
+	box: box
+	message: message
+	userInput: userInput
+	noButton: noButton
+	yesButton: yesButton
+
+	size_hint: .8, None
+	height: box.height  + sp(100)
+	auto_dismiss: False
+	StackLayout:
+		id: box
+		orientation: 'lr-tb'
+		size_hint: 1, None
+		height: self.minimum_height
+		pos_hint: {"top": .9}
+		padding: main_padding
+		Label:
+			id: message
+			text: ""
+			text_size: self.width, None
+			size_hint: None, None
+			width: self.parent.width
+			height: self.texture_size[1]
+		Spacing:
+		Label:
+			size_hint: .35, None
+			height: userInput.height
+		BaseTextInput:
+			id: userInput
+			size_hint: .3, None
+			#focus: True
+			multiline: False
+		Label:
+			size_hint: .35, None
+			height: userInput.height
+		Spacing:
+		Label:
+			size_hint: .15, None
+		Button:
+			id: noButton
+			size_hint: .3, None
+			height: row_height
+		Label:
+			size_hint: .1, None
+		Button:
+			id: yesButton
+			size_hint: .3, None
+			height: row_height
+			disabled: True if userInput.text == '' else False
+		Label:
+			size_hint: .15, None
+
+##################
+# Windows
+##################
+
+WMan:
+	MainWindow:
+	AddWindow:
+		id: add
+	BrowseWindow:
+	ResultWindow:
+		id: result
+	ShoppingWindow:
+		id: shopping
+
+<MainWindow>:
+	name: 'main'
+
+	on_pre_enter: print("[RECIPAPP] Entering MainWindow")
+	on_enter: print("[RECIPAPP] Entered MainWindow")
+
+	shoppingButton: shoppingButton
+	conversionButton: conversionButton
+
+	StackLayout:
+		orientation: 'tb-lr'
+		size_hint: 1, 1
+		padding: '20sp'
+		canvas.before:
+			Rectangle:
+				pos: self.pos
+				size: self.size
+				source: images_path+'background.jpg'
+		canvas:
+			Color:
+				rgba: 1,1,1,.6
+			Rectangle:
+				pos: self.pos
+				size: self.size
+
+		Label:
+			size_hint: 1, None
+			height: (self.parent.size[1] - mainGrid.height)/2
+
+		GridLayout:
+			id: mainGrid
+	        cols: 2
+	        size_hint: 1, None
+			height: self.width if self.width < self.parent.size[1] - sp(100) else self.parent.size[1] - sp(100)
+
+	        pos_hint: {"x": .05}
+	        spacing: '20sp'
+
+			MainButton:
+				id: addButton
+				text: "Create a recipe"
+				size_hint: .5, 1
+				on_release:
+					root.manager.transition.direction = "left"
+					app.root.current = 'add'
+
+		    MainButton:
+		    	id: browseButton
+		    	text: "My recipes"
+				size_hint: .5, 1
+				on_release:
+					root.manager.transition.direction = 'left'
+					app.root.current = 'browse'
+
+			MainButton:
+				id: shoppingButton
+				text: "Shopping list"
+				size_hint: .5, 1
+				on_release:
+					root.manager.transition.direction = 'left'
+					app.root.current = 'shopping'
+
+			MainButton:
+				id: conversionButton
+				text: "Conversion table"
+				size_hint: .5, 1
+				on_release:
+					root.comingSoon()
+
+		Label:
+			size_hint: 1, None
+			height: (self.parent.size[1] - mainGrid.height)/2
+
+<AddWindow>:
+	name: 'add'
+	recipeName: recipeName
+	portions: portions
+	prepTime: prepTime
+	mainGrid: mainGrid
+	tagsStack: tagsStack
+	tagsGrid: tagsGrid
+	ingsGrid: ingsGrid
+	ingredientRow: ingredientRow
+	steps: steps
+	saveButton: saveButton
+
+	on_pre_enter:		
+		self.clearWidgets(self)
+		root.recipeEdit(root.nameInput)
+		print("[RECIPAPP] Entering AddWindow")
+	on_pre_leave:
+		print("[RECIPAPP] Leaving AddWindow")
+	#on_leave:
+		recipeName.text = ''
+		portions.text = ''
+		prepTime.text = ''
+		steps.text = ''
+		root.newRecipe = True
+		root.nameInput = ''
+		print("[RECIPAPP] Left AddWindow")
+
+	TopBar:
+		id: topBar
+		Label:
+			id: logo
+			size_hint: None, 1
+			width: button_size
+		TopLabel:
+			id: topLabel
+			text: 'Create a recipe'
+		Label:
+			size_hint: None, 1
+			width: topBar.width - logo.width - topLabel.width - topSaveButton.width - backButton.width			
+		TopButton:
+			id: topSaveButton
+			background_normal: icons_path+'save2.png'
+			border: 0,0,0,0
+			on_release: root.preSave()
+		TopButton:
+			id: backButton
+			background_normal: icons_path+'back_arrow.png'
+			border: 0,0,0,0
+			on_release: root.goBack(self)
+
+	MainScrollView:
+		height: self.parent.size[1] - topBar.height
+		GridLayout:
+			id: mainGrid
+			cols:1
+			size_hint: 1, None
+			pos_hint: {"top": 1}
+			minimum_height: row_height
+			height: self.minimum_height
+			padding: main_padding
+			MainStackLayout: #Recipe name, portions, category
+				id: titleSec
+				spacing: grid_spacing
+				BaseTextInput:
+					id: recipeName
+					hint_text: "Title"
+					size_hint: 1, None
+					height: big_row_height
+					font_size: big_font_size
+					multiline: False
+				SmallLabel:
+					text: "Portions:"
+					size_hint: .6, None
+					text_size: self.width, None
+					height: row_height
+					halign: 'right'
+					valign: 'middle'
+				BaseTextInput:
+					id: portions
+					input_filter: 'int'
+					hint_text: 'Nr. of portions'
+					size_hint: .4, None
+					multiline: False
+				SmallLabel:
+					text: 'Preparation time:'
+					size_hint: .6, None
+					text_size: self.width, None
+					height: row_height
+					halign: 'right'
+					valign: 'middle'
+				BaseTextInput:
+					id: prepTime
+					hint_text: 'Time'
+					size_hint: .4, None
+					multiline: False
+			Label: #empty space
+				size_hint: None, None
+				size: self.parent.width - 2*self.parent.padding[0], '10sp'
+
+			MainStackLayout:
+				id: tagsStack
+				TagsGrid:
+					id: tagsGrid
+				
+			Label: #empty space
+				size_hint: None, None
+				size: self.parent.width - 2*self.parent.padding[0], '30sp'
+			SmallLabel:
+				text: "Ingredients: "
+				size_hint: None, None
+				text_size: self.width, None
+				width: self.parent.width - 2*self.parent.padding[0]
+				height: self.texture_size[1]
+				padding: small_padding
+			WhiteStackLayout: # Ingredients grid
+				id: ingsGrid
+				IngredientRow:
+					id: ingredientRow
+			Label:
+				size_hint: None, None
+				size: self.parent.width - 2*self.parent.padding[0], '10sp'
+			SmallLabel:
+				text: "Procedure:"
+				size_hint: 1, None
+				text_size: self.width, None
+				height: self.texture_size[1]
+				padding: small_padding
+			WhiteStackLayout:
+				id: stepsGrid
+				BaseTextInput:
+					id: steps
+					hint_text: 'Steps'
+					size_hint: 1, None
+					height: self.minimum_height
+			
+			Label:
+				size_hint: None, None
+				size: self.parent.width - 2*self.parent.padding[0], '10sp'
+			
+			BoxLayout:
+				size_hint: 1, None
+				height: self.minimum_height
+				Label:
+					size_hint: .35, None
+					height: saveButton.height
+				MainButton:
+					id: saveButton
+					text: "Save"
+					size_hint: .3, None
+					height: row_height
+					on_release:
+						root.preSave()
+				Label:
+					size_hint: .35, None
+					height: saveButton.height
+
+
+<BrowseWindow>:
+	name: 'browse'
+	browseList: browseList
+	searchInput: searchInput
+
+	on_pre_enter: root.makeList()
+	on_leave:
+		searchInput.text = ''
+		#self.browseList.clear_widgets()
+
+	TopBar:
+		id: topBar
+		Label:
+			id: logo
+			size_hint: None, 1
+			width: button_size
+		TopLabel:
+			id: topLabel
+			text: 'My recipes'
+		Label:
+			size_hint: None, 1
+			width: topBar.width - logo.width - topLabel.width - backButton.width	
+		TopButton:
+			id: backButton
+			background_normal: icons_path+'back_arrow.png'
+			border: 0,0,0,0
+			on_release:
+				app.root.transition.direction = 'right'
+				app.root.current = 'main'
+
+	MainScrollView:
+		height: self.parent.size[1] - topBar.height
+		GridLayout:
+			cols:1
+			size_hint: 1, None
+			pos_hint: {"top": 1}
+			height: self.minimum_height
+			padding: main_padding
+			MainStackLayout:
+				id: searchBar
+				padding: main_padding
+				BaseTextInput:
+					id: searchInput
+					hint_text: "Type a recipe, tag or ingredient"
+					size_hint: .8, None
+					on_text: root.makeList()
+			Spacing:
+			StackLayout:
+				id: browseList
+				size_hint: None, None
+				width: self.parent.size[0] - 2*self.parent.padding[0]
+				height: self.minimum_height
+				spacing: '10sp'
+				padding: main_padding
+
+<ResultWindow>:
+	name: 'result'
+
+	recipeName: recipeName
+	portions: portions
+	prepTime: prepTime
+	tagsBox: tagsBox
+	ingredientsBox: ingredientsBox
+	steps: steps
+
+	on_leave:
+		ingredientsBox.clear_widgets()
+		tagsBox.clear_widgets()
+		steps.text = ''
+
+	TopBar:
+		id: topBar
+		Label:
+			id: logo
+			size_hint: None, 1
+			width: button_size
+		TopLabel:
+			id: topLabel
+			text: 'My recipe'
+		Label:
+			size_hint: None, 1
+			width: topBar.width - logo.width - topLabel.width - editButton.width - deleteButton.width - addToBasketButton.width - backButton.width		
+		TopButton:
+			id: editButton
+			background_normal: icons_path+'edit.png'
+			border: 0,0,0,0
+			on_release:
+				app.root.ids.add.newRecipe = False
+				app.root.ids.add.nameInput = recipeName.text.lower()
+				app.root.transition.direction = 'left'
+				app.root.current = 'add'
+		TopButton:
+			id: deleteButton
+			background_normal: icons_path+'delete.png'
+			border: 0,0,0,0
+			on_release:
+				root.deletePopup()
+		TopButton:
+			id: addToBasketButton
+			background_normal: icons_path+'basket.png'
+			border: 0,0,0,0
+		TopButton:
+			id: backButton
+			background_normal: icons_path+'back_arrow.png'
+			border: 0,0,0,0
+			on_release:
+				app.root.transition.direction = 'right'
+				app.root.current = 'main'
+
+
+	MainScrollView:
+		height: self.parent.size[1] - topBar.height
+		GridLayout:
+			cols:1
+			size_hint: 1, None
+			pos_hint: {"top": 1}
+			height: self.minimum_height
+			padding: main_padding
+			StackLayout:
+				orientation: 'lr-tb'
+				size_hint: 1, None
+				height: self.minimum_height
+				BaseLabel:
+					id: recipeName
+					text_size: self.width, None
+					font_size: big_font_size
+			        size_hint: 1, None
+			        height: self.texture_size[1]
+
+				Spacing:
+				Spacing:
+				StackLayout:
+					id: portionsGrid
+					orientation: 'lr-tb'
+					size_hint: 1, None
+					height: self.minimum_height
+					padding: main_padding
+				    SmallLabel:
+				    	id: portions
+				    	text_size: self.width, None
+				    	size_hint: 1, None
+				    	height: self.texture_size[1]
+					Spacing:
+					SmallLabel:
+						id: prepTime
+						text_size: self.width, None
+						size_hint: 1, None
+						height: self.texture_size[1]
+
+				Spacing:
+				Spacing:
+
+				MainStackLayout:
+					id: tagsBox
+					spacing: ['5sp', 0]
+
+				Spacing:
+
+		        BaseLabel:
+		        	text: "Ingredients:"
+		        	size_hint: 1, None
+		        	height: '30sp'
+				WhiteStackLayout:
+					id: ingredientsBox
+					padding: main_padding
+
+
+				Spacing:
+		        Spacing:
+		        BaseLabel:
+		        	text: "Procedure:" if steps.text != '' else ""
+		        	size_hint: 1, None
+		        	height: '30sp'
+					padding: small_padding
+				WhiteStackLayout:
+					id: stepsGrid
+					padding: main_padding
+			        SmallLabel:
+			        	id: steps
+			        	text_size: self.width, None
+			        	size_hint: 1, None
+			        	height: self.texture_size[1]
+
+
+<ShoppingWindow>:
+	name: 'shopping'
+
+	TopBar:
+		id: topBar
+		Label:
+			id: logo
+			size_hint: None, 1
+			width: button_size
+		TopLabel:
+			id: topLabel
+			text: 'Shopping List'
+		Label:
+			size_hint: None, 1
+			width: topBar.width - logo.width - topLabel.width - backButton.width
+		TopButton:
+			id: backButton
+			background_normal: icons_path+'back_arrow.png'
+			border: 0,0,0,0
+			on_release:
+				app.root.transition.direction = 'right'
+				app.root.current = 'main'
+
+	MainScrollView:
+		height: self.parent.size[1] - topBar.height
+		GridLayout:
+			cols:1
+			size_hint: 1, None
+			height: self.minimum_height
+			pos_hint: {"top": 1}
+			padding: main_padding
+			BaseLabel:
+				size_hint: 1, None
+				text_size: self.width, None
+				height: self.texture_size[1]
+				text: 'Recipes:'
+			WhiteStackLayout:
+				id: recipesList
