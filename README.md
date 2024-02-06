@@ -1,2 +1,2 @@
 # RecipeApp
- (not-so) simple recipe app
+simple recipe app
